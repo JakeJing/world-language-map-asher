@@ -42,7 +42,8 @@ mkdir -p docs
 # Copy built files to docs directory
 echo "📁 Copying files to docs directory..."
 mv language-map.html docs/index.html
-mv -r language-map_files docs/ 2>/dev/null || echo "No files directory to copy"
+rm -rf docs/language-map_files
+mv language-map_files docs/
 mv styles.css docs/
 mv about.md docs/
 
