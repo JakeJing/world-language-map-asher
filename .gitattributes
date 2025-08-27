@@ -1,0 +1,2 @@
+docs/index.html filter=lfs diff=lfs merge=lfs -text
+asher2007world/cldf/**/*.geojson filter=lfs diff=lfs merge=lfs -text

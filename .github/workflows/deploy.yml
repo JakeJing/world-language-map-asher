@@ -1,0 +1,59 @@
+name: Deploy Language Map to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Setup R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: 'release'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgdal-dev libproj-dev libgeos-dev libudunits2-dev
+        
+    - name: Install R packages
+      run: |
+        R --slave -e "
+        install.packages(c('sf', 'leaflet', 'dplyr', 'DT', 'plotly', 'viridis', 'RColorBrewer'), 
+                        repos='https://cran.rstudio.com/')
+        "
+        
+    - name: Setup Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+      with:
+        version: latest
+        
+    - name: Build Quarto document
+      run: |
+        quarto render language-map.qmd
+        
+    - name: Create docs directory
+      run: |
+        mkdir -p docs
+        
+    - name: Copy files to docs
+      run: |
+        cp language-map.html docs/index.html
+        cp -r language-map_files docs/ || echo "No files directory"
+        cp styles.css docs/
+        cp about.md docs/
+        
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs

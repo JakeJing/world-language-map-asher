@@ -1,0 +1,403 @@
+---
+title: "World Languages Map Visualization"
+subtitle: "from Atlas of the World's Languages"
+format: 
+  html:
+    toc: false
+    theme: cosmo
+    css: styles.css
+    code-fold: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r libraries}
+library(sf)
+library(leaflet)
+library(dplyr)
+library(purrr)
+library(glue)
+library(DT)
+library(plotly)
+library(viridis)
+library(RColorBrewer)
+library(htmltools)
+
+prepare_geojson_data <- function(path) {
+  # Load the contemporary language data
+  geo_sf <- st_read(glue("{path}/languages.geojson"), quiet = TRUE)
+  families_sf <- st_read(glue("{path}/families.geojson"), quiet = TRUE)
+  languages_csv <- read.csv(glue("{path}/languages.csv"))
+
+  geo_sf <- geo_sf %>%
+    rename(
+      Glottocode = cldf.languageReference,
+      Family = family
+    ) %>%
+    mutate(
+      Family = ifelse(is.na(Family), "Unclassified", Family)
+    ) %>%
+    left_join(map_tb, by = c("Glottocode" = "id")) %>%
+    left_join(map_tb %>%
+      select(id, parent_name = name), by = c("parent_id" = "id")) %>%
+    mutate(
+      parent_name = ifelse(is.na(parent_name), "unclassified", parent_name)
+    ) %>%
+    mutate_if(is.character, as.factor)
+
+  result <- geo_sf %>%
+    split(.$Family) %>%
+    map_dfr(~ {
+      n_unique <- length(levels(.x$parent_id))
+      colors <- rainbow(n_unique, alpha = 0.7)
+      .x %>%
+        mutate(parent_id_color = colors[as.numeric(parent_id)])
+    })
+  return(result)
+}
+
+create_family_maps <- function(family_name, traditional_sf, contemporary_sf) {
+  # Filter data
+  traditional_filtered <- traditional_sf %>%
+    filter(Family == family_name)
+
+  contemporary_filtered <- contemporary_sf %>%
+    filter(Family == family_name)
+
+  # Create side-by-side maps
+  tagList(
+    div(
+      style = "display: flex; gap: 20px; margin-bottom: 30px;",
+
+      # Traditional Map
+      div(
+        style = "flex: 1;",
+        h4(paste(family_name, "Traditional Map"), style = "text-align: center;"),
+        leaflet() %>%
+          addTiles() %>%
+          addPolygons(
+            data = traditional_filtered,
+            fillColor = ~parent_id_color,
+            fillOpacity = ~fill.opacity,
+            weight = 1,
+            color = "#333333",
+            opacity = 0.8,
+            label = ~ paste0(
+              "<b>Language:</b> ", title, "<br>",
+              "<b>Glottocode:</b> ", Glottocode, "<br>",
+              "<b>Parent Group:</b> ", parent_name, "<br>"
+            ) %>% lapply(HTML),
+            labelOptions = labelOptions(
+              style = list("font-weight" = "normal", padding = "3px 8px"),
+              textsize = "15px",
+              direction = "auto"
+            ),
+            highlightOptions = highlightOptions(
+              weight = 3, color = "#666", fillOpacity = 0.9, bringToFront = TRUE
+            )
+          ) %>%
+          setView(lng = 20, lat = 0, zoom = 3)
+      ),
+
+      # Contemporary Map
+      div(
+        style = "flex: 1;",
+        h4(paste(family_name, "Contemporary Map"), style = "text-align: center;"),
+        leaflet() %>%
+          addTiles() %>%
+          addPolygons(
+            data = contemporary_filtered,
+            fillColor = ~parent_id_color,
+            fillOpacity = ~fill.opacity,
+            weight = 1,
+            color = "#333333",
+            opacity = 0.8,
+            label = ~ paste0(
+              "<b>Language:</b> ", title, "<br>",
+              "<b>Parent Group:</b> ", parent_name, "<br>",
+              "<b>Glottocode:</b> ", Glottocode
+            ) %>% lapply(HTML),
+            labelOptions = labelOptions(
+              style = list("font-weight" = "normal", padding = "3px 8px"),
+              textsize = "15px",
+              direction = "auto"
+            ),
+            highlightOptions = highlightOptions(
+              weight = 3, color = "#666", fillOpacity = 0.9, bringToFront = TRUE
+            )
+          ) %>%
+          setView(lng = 20, lat = 0, zoom = 3)
+      )
+    )
+  )
+}
+
+```
+
+
+```{r load-data}
+# Load Glottolog data for parent_id information
+glottolog_data <- read.csv("glottolog_languoid/languoid.csv")
+map_tb <- glottolog_data %>%
+  select(id, parent_id, name)
+# prepare contemporary and traditional data
+contemporary_sf <- prepare_geojson_data("asher2007world/cldf/contemporary")
+traditional_sf <- prepare_geojson_data("asher2007world/cldf/traditional")
+```
+
+
+## Language Family Statistics
+
+```{r family-stats}
+# Calculate family statistics for contemporary data
+contemporary_family_stats <- contemporary_sf %>%
+  st_drop_geometry() %>%
+  group_by(Family) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Count)) %>%
+  head(20) # Top 20 families
+
+# Calculate family statistics for traditional data
+traditional_family_stats <- traditional_sf %>%
+  st_drop_geometry() %>%
+  group_by(Family) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Count)) %>%
+  head(20) # Top 20 families
+
+# Create side-by-side interactive bar plots
+tagList(
+  div(
+    style = "display: flex; gap: 20px; margin-bottom: 30px;",
+    div(
+      style = "flex: 1; height: 500px;",
+      # h4("Traditional Language Families"),
+      plot_ly(
+        data = traditional_family_stats,
+        x = ~Count,
+        y = ~ reorder(Family, Count),
+        type = "bar",
+        orientation = "h",
+        marker = list(
+          color = viridis(nrow(traditional_family_stats)),
+          line = list(color = "rgb(8,48,107)", width = 1.5)
+        )
+      ) %>%
+        layout(
+          title = "Traditional Data",
+          xaxis = list(title = "Number of Languages"),
+          yaxis = list(title = ""),
+          margin = list(l = 200)
+        )
+    ),
+    div(
+      style = "flex: 1; height: 500px;",
+      # h4("Contemporary Language Families"),
+      plot_ly(
+        data = contemporary_family_stats,
+        x = ~Count,
+        y = ~ reorder(Family, Count),
+        type = "bar",
+        orientation = "h",
+        marker = list(
+          color = viridis(nrow(contemporary_family_stats)),
+          line = list(color = "rgb(8,48,107)", width = 1.5)
+        )
+      ) %>%
+        layout(
+          title = "Contemporary Data",
+          xaxis = list(title = "Number of Languages"),
+          yaxis = list(title = ""),
+          margin = list(l = 200)
+        )
+    )
+  )
+)
+```
+
+
+## Interactive World Languages Map
+
+This visualization explores the distribution of world languages based on the Asher & Moseley 2007 Atlas of the World's Languages. Each polygon represents a geographic area where a specific language is traditionally spoken.
+
+### Main Interactive Maps
+
+```{r main-maps}
+tagList(
+  div(
+    style = "display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px;",
+    div(
+      style = "flex: 1; height: 350px;",
+      h4("Traditional Data", style = "text-align: center;"),
+      leaflet() %>%
+        addTiles() %>%
+        addPolygons(
+          data = traditional_sf,
+          fillColor = ~fill, # Use the original fill colors from the data
+          fillOpacity = ~fill.opacity, # Use the existing fill.opacity column
+          weight = 1,
+          color = "#333333",
+          opacity = 0.8,
+          # Hover tooltip instead of click popup
+          label = ~ paste0(
+            "<b>Language:</b> ", title, "<br>",
+            "<b>Parent Group:</b> ", parent_name, "<br>",
+            "<b>Glottocode:</b> ", Glottocode
+          ) %>% lapply(HTML),
+          labelOptions = labelOptions(
+            style = list(
+              "font-weight" = "normal",
+              padding = "3px 8px"
+            ),
+            textsize = "15px",
+            direction = "auto"
+          ),
+          highlightOptions = highlightOptions(
+            weight = 3,
+            color = "#666",
+            fillOpacity = 0.9,
+            bringToFront = TRUE
+          )
+        ) %>%
+        setView(lng = 0, lat = 30, zoom = 1.5)
+    ),
+    div(
+      style = "flex: 1; height: 350px;",
+      h4("Contemporary Data", style = "text-align: center;"),
+      leaflet() %>%
+        addTiles() %>%
+        addPolygons(
+          data = contemporary_sf,
+          fillColor = ~fill, # Use the original fill colors from the data
+          fillOpacity = ~fill.opacity, # Use the existing fill.opacity column
+          weight = 1,
+          color = "#333333",
+          opacity = 0.8,
+          # Hover tooltip instead of click popup
+          label = ~ paste0(
+            "<b>Language:</b> ", title, "<br>",
+            "<b>Parent Group:</b> ", parent_name, "<br>",
+            "<b>Glottocode:</b> ", Glottocode
+          ) %>% lapply(HTML),
+          labelOptions = labelOptions(
+            style = list(
+              "font-weight" = "normal",
+              padding = "3px 8px"
+            ),
+            textsize = "15px",
+            direction = "auto"
+          ),
+          highlightOptions = highlightOptions(
+            weight = 3,
+            color = "#666",
+            fillOpacity = 0.9,
+            bringToFront = TRUE
+          )
+        ) %>%
+        setView(lng = 0, lat = 30, zoom = 1.5)
+    )
+  )
+)
+```
+
+## Major Language Families
+
+Below are interactive maps for major language families by intersecting the top 10 language families in the traditional and contemporary data. Each family shows traditional (left) and contemporary (right) maps side-by-side. Hover over any polygon to see detailed language information.
+
+```{r}
+top10_contemporary <- contemporary_family_stats %>%
+  filter(!Family %in% "Unclassified") %>%
+  pull(Family) %>%
+  head(10)
+
+top10_traditional <- traditional_family_stats %>%
+  filter(!Family %in% "Unclassified") %>%
+  pull(Family) %>%
+  head(10)
+
+families <- intersect(top10_contemporary, top10_traditional)
+
+for (fam in families) {
+  # Print a section heading
+  cat("### ", fam, "\n\n", sep = "")
+  # Print the map
+  print(create_family_maps(fam, traditional_sf, contemporary_sf))
+  cat("\n\n") # spacing
+}
+```
+
+
+### Complete Language Database
+
+```{r language-table}
+# Create side-by-side interactive data tables
+tagList(
+  div(
+    style = "display: flex; gap: 20px; margin-bottom: 30px;",
+    div(
+      style = "flex: 1;",
+      h4("Traditional Language Database", style = "text-align: center;"),
+      datatable(
+        traditional_sf %>%
+          select(title, Family, Glottocode) %>%
+          st_drop_geometry(),
+        colnames = c("Language Name", "Family", "Glottocode"),
+        options = list(
+          pageLength = 20,
+          order = list(list(0, "asc")),
+          scrollX = TRUE
+        ),
+        caption = "Traditional Language Database"
+      )
+    ),
+    div(
+      style = "flex: 1;",
+      h4("Contemporary Language Database", style = "text-align: center;"),
+      datatable(
+        contemporary_sf %>%
+          select(title, Family, Glottocode) %>%
+          st_drop_geometry(),
+        colnames = c("Language Name", "Family", "Glottocode"),
+        options = list(
+          pageLength = 20,
+          order = list(list(0, "asc")),
+          scrollX = TRUE
+        ),
+        caption = "Contemporary Language Database"
+      )
+    )
+  )
+)
+```
+
+## Technical Implementation
+
+This visualization uses:
+- **SF**: For spatial data handling
+- **Leaflet**: For interactive mapping
+- **Plotly**: For interactive visualizations
+- **DT**: For interactive data tables
+- **Quarto**: For modern scientific publishing
+
+The application is designed for an initial check of the language maps from the Atlas of the World's Languages. It is deployable on GitHub Pages using Quarto. The script is in the `language-map.qmd` file (partly generated by Cursor). The data is in the `asher2007world/cldf` directory. The `glottolog_languoid` directory is for Glottolog data.
+
+This visualization builds upon the recent work of [Ranacher et al. (2025)](https://doi.org/10.1038/s41597-025-05828-6), who created a global and interoperable dataset of linguistic distributions derived from the Atlas of the World's Languages.
+---
+
+*Data Sources:*
+
+- Asher, R.E. & Moseley, C. (2007). Atlas of the World's Languages. Routledge.
+
+- Ranacher, P., Forkel, R., Efrat-Kowalsky, N. et al. (2025). A global and interoperable dataset of linguistic distributions derived from the Atlas of the World's Languages. Scientific Data 12, 1466. https://doi.org/10.1038/s41597-025-05828-6
