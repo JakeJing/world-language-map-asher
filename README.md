@@ -180,6 +180,7 @@ Languages are organized into families, allowing exploration of:
 When using this visualization, please cite:
 ```
 Asher, R.E. & Moseley, C. (2007). Atlas of the World's Languages. Routledge.
+Ranacher, P., Forkel, R., Efrat-Kowalsky, N. et al. (2025). A global and interoperable dataset of linguistic distributions derived from the Atlas of the World's Languages. Scientific Data 12, 1466. https://doi.org/10.1038/s41597-025-05828-6
 ```
 
 ## Contributing
