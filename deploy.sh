@@ -41,10 +41,10 @@ mkdir -p docs
 
 # Copy built files to docs directory
 echo "📁 Copying files to docs directory..."
-cp language-map.html docs/index.html
-cp -r language-map_files docs/ 2>/dev/null || echo "No files directory to copy"
-cp styles.css docs/
-cp about.md docs/
+mv language-map.html docs/index.html
+mv -r language-map_files docs/ 2>/dev/null || echo "No files directory to copy"
+mv styles.css docs/
+mv about.md docs/
 
 # Create a simple index page if needed
 if [ ! -f docs/index.html ]; then
