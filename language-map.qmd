@@ -16,7 +16,7 @@ execute:
   warning: false
   message: false
   # cache: true   # Cache computations
-  freeze: auto  # Freeze expensive computations
+  # freeze: auto  # Freeze expensive computations
 ---
 
 ```{r setup, include=FALSE}
