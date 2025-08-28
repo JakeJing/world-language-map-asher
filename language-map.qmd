@@ -1,5 +1,5 @@
 ---
-title: "Interactive Map of World Languages"
+title: "Interactive Map of World's Languages"
 subtitle: "from Atlas of the World's Languages"
 format: 
   html:
@@ -181,9 +181,7 @@ traditional_sf <- readRDS("traditional_sf.rds")
 ```
 
 
-## Interactive World Languages Map
-
-This visualization explores the distribution of world languages based on the [Asher & Moseley (2007)](https://www.routledge.com/Atlas-of-the-Worlds-Languages/Asher-Moseley/p/book/9781315829845?srsltid=AfmBOor_QJOYhGh2ND2aaCP14OHbOHhJ6rOLfgAAPqPPf8vpS-rTtzBN) Atlas of the World's Languages. This visualization builds upon the recent work of [Ranacher et al. (2025)](https://doi.org/10.1038/s41597-025-05828-6), who created a global and interoperable dataset of linguistic distributions derived from the Atlas of the World's Languages. Each polygon represents a geographic area where a specific language is spoken. Two maps are shown for each language: one for the traditional speaker areas and one for the contemporary speaker areas.
+This visualization explores the distribution of world's languages based on the [Asher & Moseley (2007)](https://www.routledge.com/Atlas-of-the-Worlds-Languages/Asher-Moseley/p/book/9781315829845?srsltid=AfmBOor_QJOYhGh2ND2aaCP14OHbOHhJ6rOLfgAAPqPPf8vpS-rTtzBN) Atlas of the World's Languages. This visualization builds on the recent work of [Ranacher et al. (2025)](https://doi.org/10.1038/s41597-025-05828-6), who created a global and interoperable dataset of linguistic distributions derived from the Atlas of the World's Languages. Each polygon represents a geographic area where a specific language is spoken. Two maps are shown for each language: one for the traditional speaker areas and one for the contemporary speaker areas.
 
 **Important!** The resolution of the map is reduced to 5% of the original data via `ms_simplify` function to reduce the size of the rendered HTML page. If you need higher resolution, you can remove the `ms_simplify` line in the `prepare_geojson_data` function and render the qmd file locally.
 
