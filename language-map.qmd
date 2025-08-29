@@ -36,6 +36,7 @@ library(plotly)
 library(viridis)
 library(RColorBrewer)
 library(htmltools)
+library(htmlwidgets)
 library(rmapshaper)
 
 prepare_geojson_data <- function(path) {
@@ -194,11 +195,13 @@ This visualization explores the distribution of world's languages based on the [
 #| echo: false
 tagList(
   div(
+    id = "main-maps-container",
     style = "display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px;",
     div(
+      id = "traditional-main-map-section",
       style = "flex: 1; height: 300px;",
       h4("Traditional Speaker Areas", style = "text-align: center;"),
-      leaflet() %>%
+      leaflet("traditional_main_map") %>%
         addTiles() %>%
         addPolygons(
           data = traditional_sf,
@@ -207,6 +210,7 @@ tagList(
           weight = 1,
           color = "#333333",
           opacity = 0.8,
+          layerId = ~Glottocode, # Add layer ID for interaction
           # Hover tooltip instead of click popup
           label = ~ paste0(
             "<b>Language:</b> ", title, "<br>",
@@ -229,12 +233,18 @@ tagList(
           )
         ) %>%
         addFullscreenControl() %>%
-        setView(lng = 0, lat = 30, zoom = 1.5)
+        setView(lng = 0, lat = 30, zoom = 1.5) %>%
+        htmlwidgets::onRender("
+          function(el, x) {
+            window.leafletMaps['traditional_main_map'] = this;
+          }
+        ")
     ),
     div(
+      id = "contemporary-main-map-section",
       style = "flex: 1; height: 300px;",
       h4("Contemporary Speaker Areas", style = "text-align: center;"),
-      leaflet() %>%
+      leaflet("contemporary_main_map") %>%
         addTiles() %>%
         addPolygons(
           data = contemporary_sf,
@@ -243,6 +253,7 @@ tagList(
           weight = 1,
           color = "#333333",
           opacity = 0.8,
+          layerId = ~Glottocode, # Add layer ID for interaction
           # Hover tooltip instead of click popup
           label = ~ paste0(
             "<b>Language:</b> ", title, "<br>",
@@ -265,7 +276,12 @@ tagList(
           )
         ) %>%
         addFullscreenControl() %>%
-        setView(lng = 0, lat = 30, zoom = 1.5)
+        setView(lng = 0, lat = 30, zoom = 1.5) %>%
+        htmlwidgets::onRender("
+          function(el, x) {
+            window.leafletMaps['contemporary_main_map'] = this;
+          }
+        ")
     )
   )
 )
@@ -424,16 +440,24 @@ tagList(
 
 ```{r language-table}
 #| echo: false
-# Prepare data for tables
+# Prepare data for tables with clickable links
 traditional_table_data <- traditional_sf %>%
   select(title, Family, Glottocode) %>%
   st_drop_geometry() %>%
-  arrange(title)
+  arrange(title) %>%
+  mutate(
+    Language_Name = paste0('<a href="#" onclick="highlightLanguage(\'', Glottocode, '\', \'traditional\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">', title, '</a>')
+  ) %>%
+  select(Language_Name, Family, Glottocode)
 
 contemporary_table_data <- contemporary_sf %>%
   select(title, Family, Glottocode) %>%
   st_drop_geometry() %>%
-  arrange(title)
+  arrange(title) %>%
+  mutate(
+    Language_Name = paste0('<a href="#" onclick="highlightLanguage(\'', Glottocode, '\', \'contemporary\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">', title, '</a>')
+  ) %>%
+  select(Language_Name, Family, Glottocode)
 
 # Create side-by-side tables
 tagList(
@@ -448,8 +472,13 @@ tagList(
         options = list(
           pageLength = 15,
           order = list(list(0, "asc")),
-          scrollX = TRUE
+          scrollX = TRUE,
+          columnDefs = list(list(
+            targets = 0,
+            render = JS("function(data, type, row) { return data; }")
+          ))
         ),
+        escape = FALSE,
         caption = "Traditional Database"
       )
     ),
@@ -462,12 +491,81 @@ tagList(
         options = list(
           pageLength = 15,
           order = list(list(0, "asc")),
-          scrollX = TRUE
+          scrollX = TRUE,
+          columnDefs = list(list(
+            targets = 0,
+            render = JS("function(data, type, row) { return data; }")
+          ))
         ),
+        escape = FALSE,
         caption = "Contemporary Database"
       )
     )
-  )
+  ),
+  
+  # Add JavaScript for map interaction
+  tags$script(HTML("
+    // Store map references globally
+    window.leafletMaps = {};
+    
+    function highlightLanguage(glottocode, mapType) {
+      console.log('highlightLanguage called with:', glottocode, mapType);
+      
+      var mapId = mapType === 'traditional' ? 'traditional_main_map' : 'contemporary_main_map';
+      var map = window.leafletMaps[mapId];
+      
+      console.log('Map ID:', mapId);
+      console.log('Map found:', !!map);
+      
+      if (!map) {
+        console.log('Map not found:', mapId);
+        console.log('Available maps:', Object.keys(window.leafletMaps));
+        return;
+      }
+      
+      // Find the layer with the matching Glottocode
+      var targetLayer = null;
+      map.eachLayer(function(layer) {
+        if (layer.options && layer.options.layerId === glottocode) {
+          targetLayer = layer;
+        }
+      });
+      
+      console.log('Target layer found:', !!targetLayer);
+      
+      if (targetLayer) {
+        // Get the bounds of the layer
+        var bounds = targetLayer.getBounds();
+        
+        // Fit the map to the layer bounds with some padding
+        map.fitBounds(bounds, {padding: [20, 20]});
+        
+        // Highlight the layer temporarily
+        targetLayer.setStyle({weight: 4, color: '#ff0000', fillOpacity: 0.9});
+        
+        // Reset the style after 3 seconds
+        setTimeout(function() {
+          targetLayer.setStyle({weight: 1, color: '#333333', fillOpacity: 0.8});
+        }, 3000);
+        
+        // Scroll to the correct map section using specific IDs
+        var targetSectionId = mapType === 'traditional' ? 'traditional-main-map-section' : 'contemporary-main-map-section';
+        var mapSection = document.getElementById(targetSectionId);
+        
+        console.log('Target section ID:', targetSectionId);
+        console.log('Map section found:', !!mapSection);
+        
+        if (mapSection) {
+          mapSection.scrollIntoView({behavior: 'smooth', block: 'start'});
+          console.log('Scrolled to section');
+        } else {
+          console.log('Map section not found:', targetSectionId);
+        }
+      } else {
+        console.log('Language not found:', glottocode);
+      }
+    }
+  "))
 )
 ```
 
