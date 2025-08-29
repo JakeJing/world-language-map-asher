@@ -358,84 +358,6 @@ create_family_maps("Uralic", traditional_sf, contemporary_sf,
                    custom_view = list(lng = 55, lat = 60, zoom = 3))
 ```
 
-## Language Family Statistics
-
-This section shows the distribution of languages across major language families in both traditional and contemporary databases.
-
-```{r family-stats}
-#| echo: false  
-# Calculate family statistics for contemporary data
-contemporary_family_stats <- contemporary_sf %>%
-  st_drop_geometry() %>%
-  group_by(Family) %>%
-  summarise(
-    Count = n(),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(Count)) %>%
-  head(20) # Top 20 families
-
-# Calculate family statistics for traditional data
-traditional_family_stats <- traditional_sf %>%
-  st_drop_geometry() %>%
-  group_by(Family) %>%
-  summarise(
-    Count = n(),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(Count)) %>%
-  head(20) # Top 20 families
-
-# Create side-by-side interactive bar plots
-tagList(
-  div(
-    style = "display: flex; gap: 20px; margin-bottom: 30px;",
-    div(
-      style = "flex: 1; height: 500px;",
-      h4("Traditional Database", style = "text-align: center;"),
-      plot_ly(
-        data = traditional_family_stats,
-        x = ~Count,
-        y = ~ reorder(Family, Count),
-        type = "bar",
-        orientation = "h",
-        marker = list(
-          color = viridis(nrow(traditional_family_stats)),
-          line = list(color = "rgb(8,48,107)", width = 1.5)
-        )
-      ) %>%
-        layout(
-          title = "Traditional Database",
-          xaxis = list(title = "Number of Languages"),
-          yaxis = list(title = ""),
-          margin = list(l = 200)
-        )
-    ),
-    div(
-      style = "flex: 1; height: 500px;",
-      h4("Contemporary Database", style = "text-align: center;"),
-      plot_ly(
-        data = contemporary_family_stats,
-        x = ~Count,
-        y = ~ reorder(Family, Count),
-        type = "bar",
-        orientation = "h",
-        marker = list(
-          color = viridis(nrow(contemporary_family_stats)),
-          line = list(color = "rgb(8,48,107)", width = 1.5)
-        )
-      ) %>%
-        layout(
-          title = "Contemporary Database",
-          xaxis = list(title = "Number of Languages"),
-          yaxis = list(title = ""),
-          margin = list(l = 200)
-        )
-    )
-  )
-)
-```
-
 ### Complete Language Database
 
 ```{r language-table}
@@ -566,6 +488,84 @@ tagList(
       }
     }
   "))
+)
+```
+
+## Language Family Statistics
+
+This section shows the distribution of languages across major language families in both traditional and contemporary databases.
+
+```{r family-stats}
+#| echo: false  
+# Calculate family statistics for contemporary data
+contemporary_family_stats <- contemporary_sf %>%
+  st_drop_geometry() %>%
+  group_by(Family) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Count)) %>%
+  head(20) # Top 20 families
+
+# Calculate family statistics for traditional data
+traditional_family_stats <- traditional_sf %>%
+  st_drop_geometry() %>%
+  group_by(Family) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Count)) %>%
+  head(20) # Top 20 families
+
+# Create side-by-side interactive bar plots
+tagList(
+  div(
+    style = "display: flex; gap: 20px; margin-bottom: 30px;",
+    div(
+      style = "flex: 1; height: 500px;",
+      # h4("Traditional Database", style = "text-align: center;"),
+      plot_ly(
+        data = traditional_family_stats,
+        x = ~Count,
+        y = ~ reorder(Family, Count),
+        type = "bar",
+        orientation = "h",
+        marker = list(
+          color = viridis(nrow(traditional_family_stats)),
+          line = list(color = "rgb(8,48,107)", width = 1.5)
+        )
+      ) %>%
+        layout(
+          title = "Traditional Database",
+          xaxis = list(title = "Number of Languages"),
+          yaxis = list(title = ""),
+          margin = list(l = 200)
+        )
+    ),
+    div(
+      style = "flex: 1; height: 500px;",
+      # h4("Contemporary Database", style = "text-align: center;"),
+      plot_ly(
+        data = contemporary_family_stats,
+        x = ~Count,
+        y = ~ reorder(Family, Count),
+        type = "bar",
+        orientation = "h",
+        marker = list(
+          color = viridis(nrow(contemporary_family_stats)),
+          line = list(color = "rgb(8,48,107)", width = 1.5)
+        )
+      ) %>%
+        layout(
+          title = "Contemporary Database",
+          xaxis = list(title = "Number of Languages"),
+          yaxis = list(title = ""),
+          margin = list(l = 200)
+        )
+    )
+  )
 )
 ```
 
