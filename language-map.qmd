@@ -493,7 +493,6 @@ tagList(
 
 ## Language Family Statistics
 
-This section shows the distribution of languages across major language families in both traditional and contemporary databases.
 
 ```{r family-stats}
 #| echo: false  
