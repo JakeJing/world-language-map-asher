@@ -5,7 +5,7 @@ format:
   html:
     toc: false
     theme: cosmo
-    css: styles.css
+    css: docs/styles.css
     code-fold: true
     embed-resources: false  # Don't embed everything in one file
     minimal: true
@@ -41,9 +41,9 @@ library(rmapshaper)
 
 prepare_geojson_data <- function(path) {
   # Load the contemporary language data
-  geo_sf <- st_read(glue("{path}/languages.geojson"), quiet = TRUE) %>% 
-  st_make_valid() %>%
-  ms_simplify(keep = 0.1, keep_shapes = TRUE)
+  geo_sf <- st_read(glue("{path}/languages.geojson"), quiet = TRUE) %>%
+    st_make_valid() %>%
+    ms_simplify(keep = 0.1, keep_shapes = TRUE)
   languages_csv <- read.csv(glue("{path}/languages.csv"))
 
   geo_sf <- geo_sf %>%
@@ -55,8 +55,11 @@ prepare_geojson_data <- function(path) {
       Family = ifelse(is.na(Family), "Unclassified", Family)
     ) %>%
     left_join(map_tb, by = c("Glottocode" = "id")) %>%
-    left_join(map_tb %>%
-      select(id, parent_name = name), by = c("parent_id" = "id")) %>%
+    left_join(
+      map_tb %>%
+        select(id, parent_name = name),
+      by = c("parent_id" = "id")
+    ) %>%
     mutate(
       parent_name = ifelse(is.na(parent_name), "unclassified", parent_name)
     ) %>%
@@ -64,17 +67,23 @@ prepare_geojson_data <- function(path) {
 
   result <- geo_sf %>%
     split(.$Family) %>%
-    map_dfr(~ {
-      n_unique <- length(levels(.x$parent_id))
-      colors <- rainbow(n_unique, alpha = 0.7)
-      .x %>%
-        mutate(parent_id_color = colors[as.numeric(parent_id)])
-    })
+    map_dfr(
+      ~ {
+        n_unique <- length(levels(.x$parent_id))
+        colors <- rainbow(n_unique, alpha = 0.7)
+        .x %>%
+          mutate(parent_id_color = colors[as.numeric(parent_id)])
+      }
+    )
   return(result)
 }
 
-create_family_maps <- function(family_name, traditional_sf, contemporary_sf, 
-                              custom_view = NULL) {
+create_family_maps <- function(
+  family_name,
+  traditional_sf,
+  contemporary_sf,
+  custom_view = NULL
+) {
   # Filter data
   traditional_filtered <- traditional_sf %>%
     filter(Family == family_name)
@@ -110,21 +119,35 @@ create_family_maps <- function(family_name, traditional_sf, contemporary_sf,
             color = "#333333",
             opacity = 0.8,
             label = ~ paste0(
-              "<b>Language:</b> ", title, "<br>",
-              "<b>Glottocode:</b> ", Glottocode, "<br>",
-              "<b>Parent Group:</b> ", parent_name, "<br>"
-            ) %>% lapply(HTML),
+              "<b>Language:</b> ",
+              title,
+              "<br>",
+              "<b>Glottocode:</b> ",
+              Glottocode,
+              "<br>",
+              "<b>Parent Group:</b> ",
+              parent_name,
+              "<br>"
+            ) %>%
+              lapply(HTML),
             labelOptions = labelOptions(
               style = list("font-weight" = "normal", padding = "3px 8px"),
               textsize = "15px",
               direction = "auto"
             ),
             highlightOptions = highlightOptions(
-              weight = 3, color = "#666", fillOpacity = 0.9, bringToFront = TRUE
+              weight = 3,
+              color = "#666",
+              fillOpacity = 0.9,
+              bringToFront = TRUE
             )
           ) %>%
           addFullscreenControl() %>%
-          setView(lng = view_params$lng, lat = view_params$lat, zoom = view_params$zoom)
+          setView(
+            lng = view_params$lng,
+            lat = view_params$lat,
+            zoom = view_params$zoom
+          )
       ),
 
       # Contemporary Map
@@ -141,21 +164,34 @@ create_family_maps <- function(family_name, traditional_sf, contemporary_sf,
             color = "#333333",
             opacity = 0.8,
             label = ~ paste0(
-              "<b>Language:</b> ", title, "<br>",
-              "<b>Parent Group:</b> ", parent_name, "<br>",
-              "<b>Glottocode:</b> ", Glottocode
-            ) %>% lapply(HTML),
+              "<b>Language:</b> ",
+              title,
+              "<br>",
+              "<b>Parent Group:</b> ",
+              parent_name,
+              "<br>",
+              "<b>Glottocode:</b> ",
+              Glottocode
+            ) %>%
+              lapply(HTML),
             labelOptions = labelOptions(
               style = list("font-weight" = "normal", padding = "3px 8px"),
               textsize = "15px",
               direction = "auto"
             ),
             highlightOptions = highlightOptions(
-              weight = 3, color = "#666", fillOpacity = 0.9, bringToFront = TRUE
+              weight = 3,
+              color = "#666",
+              fillOpacity = 0.9,
+              bringToFront = TRUE
             )
           ) %>%
           addFullscreenControl() %>%
-          setView(lng = view_params$lng, lat = view_params$lat, zoom = view_params$zoom)
+          setView(
+            lng = view_params$lng,
+            lat = view_params$lat,
+            zoom = view_params$zoom
+          )
       )
     )
   )
@@ -181,7 +217,7 @@ traditional_sf <- prepare_geojson_data("asher2007world/cldf/traditional")
 ```{r}
 #| echo: false
 contemporary_sf <- readRDS("contemporary_sf.rds")
-traditional_sf <- readRDS("traditional_sf.rds") 
+traditional_sf <- readRDS("traditional_sf.rds")
 ```
 
 
@@ -213,10 +249,16 @@ tagList(
           layerId = ~Glottocode, # Add layer ID for interaction
           # Hover tooltip instead of click popup
           label = ~ paste0(
-            "<b>Language:</b> ", title, "<br>",
-            "<b>Glottocode:</b> ", Glottocode, "<br>",
-            "<b>Parent Group:</b> ", parent_name
-          ) %>% lapply(HTML),
+            "<b>Language:</b> ",
+            title,
+            "<br>",
+            "<b>Glottocode:</b> ",
+            Glottocode,
+            "<br>",
+            "<b>Parent Group:</b> ",
+            parent_name
+          ) %>%
+            lapply(HTML),
           labelOptions = labelOptions(
             style = list(
               "font-weight" = "normal",
@@ -234,11 +276,13 @@ tagList(
         ) %>%
         addFullscreenControl() %>%
         setView(lng = 0, lat = 30, zoom = 1.5) %>%
-        htmlwidgets::onRender("
+        htmlwidgets::onRender(
+          "
           function(el, x) {
             window.leafletMaps['traditional_main_map'] = this;
           }
-        ")
+        "
+        )
     ),
     div(
       id = "contemporary-main-map-section",
@@ -256,10 +300,16 @@ tagList(
           layerId = ~Glottocode, # Add layer ID for interaction
           # Hover tooltip instead of click popup
           label = ~ paste0(
-            "<b>Language:</b> ", title, "<br>",
-            "<b>Parent Group:</b> ", parent_name, "<br>",
-            "<b>Glottocode:</b> ", Glottocode
-          ) %>% lapply(HTML),
+            "<b>Language:</b> ",
+            title,
+            "<br>",
+            "<b>Parent Group:</b> ",
+            parent_name,
+            "<br>",
+            "<b>Glottocode:</b> ",
+            Glottocode
+          ) %>%
+            lapply(HTML),
           labelOptions = labelOptions(
             style = list(
               "font-weight" = "normal",
@@ -277,11 +327,13 @@ tagList(
         ) %>%
         addFullscreenControl() %>%
         setView(lng = 0, lat = 30, zoom = 1.5) %>%
-        htmlwidgets::onRender("
+        htmlwidgets::onRender(
+          "
           function(el, x) {
             window.leafletMaps['contemporary_main_map'] = this;
           }
-        ")
+        "
+        )
     )
   )
 )
@@ -296,40 +348,25 @@ Below are interactive maps for major language families in the traditional and co
 
 ```{r}
 #| echo: false
-create_family_maps("Atlantic-Congo", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 15, lat = -5, zoom = 3))
+create_family_maps(
+  "Atlantic-Congo",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 15, lat = -5, zoom = 3)
+)
 ```
 
-### Austronesian
-
-```{r}
-#| echo: false
-create_family_maps("Austronesian", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 120, lat = -10, zoom = 3))
-```
-
-### Sino-Tibetan
-
-```{r}
-#| echo: false
-create_family_maps("Sino-Tibetan", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 100, lat = 30, zoom = 4))
-```
-
-### Nuclear Trans New Guinea
-
-```{r}
-#| echo: false
-create_family_maps("Nuclear Trans New Guinea", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 140, lat = -5, zoom = 5))
-```
 
 ### Afro-Asiatic
 
 ```{r}
 #| echo: false
-create_family_maps("Afro-Asiatic", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 25, lat = 20, zoom = 3))
+create_family_maps(
+  "Afro-Asiatic",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 25, lat = 20, zoom = 3)
+)
 ```
 
 
@@ -337,26 +374,131 @@ create_family_maps("Afro-Asiatic", traditional_sf, contemporary_sf,
 
 ```{r}
 #| echo: false
-create_family_maps("Indo-European", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 25, lat = 30, zoom = 2))
+create_family_maps(
+  "Indo-European",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 25, lat = 30, zoom = 2)
+)
 ```
 
-
-### Austroasiatic
-
-```{r}
-#| echo: false
-create_family_maps("Austroasiatic", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 95, lat = 15, zoom = 4))
-```
 
 ### Uralic
 
 ```{r}
 #| echo: false  
-create_family_maps("Uralic", traditional_sf, contemporary_sf,
-                   custom_view = list(lng = 55, lat = 60, zoom = 3))
+create_family_maps(
+  "Uralic",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 55, lat = 60, zoom = 3)
+)
 ```
+
+
+### Sino-Tibetan
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Sino-Tibetan",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 100, lat = 30, zoom = 3)
+)
+```
+
+
+### Tai-Kadai
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Tai-Kadai",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 105, lat = 20, zoom = 5)
+)
+```
+
+### Austroasiatic
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Austroasiatic",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 95, lat = 15, zoom = 4)
+)
+```
+
+### Austronesian
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Austronesian",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 120, lat = -10, zoom = 3)
+)
+```
+
+
+### Nuclear Trans New Guinea
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Nuclear Trans New Guinea",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 140, lat = -5, zoom = 5)
+)
+```
+
+
+### Pama-Nyungan
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Pama-Nyungan",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = 140, lat = -25, zoom = 4)
+)
+```
+
+
+
+### Uto-Aztecan
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Uto-Aztecan",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = -105, lat = 30, zoom = 4)
+)
+```
+
+
+### Arawakan
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Arawakan",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = -65, lat = 0, zoom = 4)
+)
+```
+
+
 
 ### Complete Language Database
 
@@ -368,7 +510,13 @@ traditional_table_data <- traditional_sf %>%
   st_drop_geometry() %>%
   arrange(title) %>%
   mutate(
-    Language_Name = paste0('<a href="#" onclick="highlightLanguage(\'', Glottocode, '\', \'traditional\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">', title, '</a>')
+    Language_Name = paste0(
+      '<a href="#" onclick="highlightLanguage(\'',
+      Glottocode,
+      '\', \'traditional\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">',
+      title,
+      '</a>'
+    )
   ) %>%
   select(Language_Name, Family, Glottocode)
 
@@ -377,7 +525,13 @@ contemporary_table_data <- contemporary_sf %>%
   st_drop_geometry() %>%
   arrange(title) %>%
   mutate(
-    Language_Name = paste0('<a href="#" onclick="highlightLanguage(\'', Glottocode, '\', \'contemporary\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">', title, '</a>')
+    Language_Name = paste0(
+      '<a href="#" onclick="highlightLanguage(\'',
+      Glottocode,
+      '\', \'contemporary\')" style="color: #007bff; text-decoration: underline; cursor: pointer;">',
+      title,
+      '</a>'
+    )
   ) %>%
   select(Language_Name, Family, Glottocode)
 
@@ -424,9 +578,10 @@ tagList(
       )
     )
   ),
-  
+
   # Add JavaScript for map interaction
-  tags$script(HTML("
+  tags$script(HTML(
+    "
     // Store map references globally
     window.leafletMaps = {};
     
@@ -487,7 +642,8 @@ tagList(
         console.log('Language not found:', glottocode);
       }
     }
-  "))
+  "
+  ))
 )
 ```
 
