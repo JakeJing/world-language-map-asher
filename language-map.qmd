@@ -378,7 +378,7 @@ create_family_maps(
   "Indo-European",
   traditional_sf,
   contemporary_sf,
-  custom_view = list(lng = 25, lat = 30, zoom = 2)
+  custom_view = list(lng = 25, lat = 40, zoom = 2)
 )
 ```
 
