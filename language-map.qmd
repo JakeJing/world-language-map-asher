@@ -472,6 +472,17 @@ create_family_maps(
 ```
 
 
+### Algic/Algonquian
+
+```{r}
+#| echo: false
+create_family_maps(
+  "Algic",
+  traditional_sf,
+  contemporary_sf,
+  custom_view = list(lng = -90, lat = 45, zoom = 3)
+)
+```
 
 ### Uto-Aztecan
 
