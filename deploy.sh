@@ -3,6 +3,8 @@
 # World Languages Map Deployment Script
 # This script builds the Quarto document and prepares it for GitHub Pages deployment
 
+set -euo pipefail
+
 echo "🌍 Building World Languages Map for deployment..."
 
 # Check if Quarto is installed
@@ -23,6 +25,7 @@ fi
 echo "📦 Checking and installing required R packages..."
 R --slave -e "
 packages <- c('sf', 'leaflet', 'dplyr', 'DT', 'plotly', 'viridis', 'RColorBrewer')
+packages <- c(packages, 'leaflet.extras', 'purrr', 'glue', 'htmltools', 'htmlwidgets', 'rmapshaper')
 missing_packages <- packages[!packages %in% installed.packages()[,'Package']]
 if(length(missing_packages) > 0) {
   cat('Installing missing packages:', missing_packages, '\n')
@@ -39,31 +42,13 @@ quarto render language-map.qmd
 # Create docs directory if it doesn't exist
 mkdir -p docs
 
-# Copy built files to docs directory
-echo "📁 Copying files to docs directory..."
+# Move built files to docs directory
+echo "📁 Moving files to docs directory..."
 mv language-map.html docs/index.html
 rm -rf docs/language-map_files
 mv language-map_files docs/
-mv styles.css docs/
-mv about.md docs/
-
-# Create a simple index page if needed
-if [ ! -f docs/index.html ]; then
-    echo "⚠️  Warning: index.html not found. Creating a simple redirect..."
-    cat > docs/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>World Languages Map</title>
-    <meta http-equiv="refresh" content="0; url=language-map.html">
-</head>
-<body>
-    <p>Redirecting to <a href="language-map.html">World Languages Map</a>...</p>
-</body>
-</html>
-EOF
-fi
+sed -i.bak 's|href="docs/styles.css"|href="styles.css"|' docs/index.html
+rm -f docs/index.html.bak
 
 echo "✅ Build complete! Files are ready in the docs/ directory."
 echo ""

@@ -42,55 +42,26 @@ An interactive visualization of world language distributions based on the Asher 
 
 This is the easiest way to deploy the static version:
 
-1. **Push to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Add language map visualization"
-   git push origin main
-   ```
-
-2. **Enable GitHub Pages**:
+1. **Enable GitHub Pages**:
    - Go to your repository settings
    - Scroll down to "GitHub Pages" section
    - Select "Deploy from a branch"
    - Choose "main" branch and "/docs" folder
    - Click "Save"
 
-3. **Build and Deploy**:
+2. **Build and Deploy**:
    ```bash
-   # Install Quarto if not already installed
-   # https://quarto.org/docs/get-started/
-   
-   # Build the language map
-   quarto render language-map.qmd
-   
-   # Move the output to docs folder
-   mkdir -p docs
-   cp language-map.html docs/index.html
-   cp -r language-map_files docs/
-   cp styles.css docs/
-   cp about.md docs/
-   
-   # Push to GitHub
-   git add docs/
-   git commit -m "Add built files for GitHub Pages"
+   ./deploy.sh
+   git add -A docs/ language-map.html language-map_files deploy.sh README.md
+   git commit -m "Update language map visualization"
    git push origin main
    ```
 
-4. **Access your site**: `https://yourusername.github.io/your-repo-name/`
+3. **Access your site**: `https://yourusername.github.io/your-repo-name/`
 
 ### Option 2: Automated Deployment (GitHub Actions)
 
-The repository includes GitHub Actions for automatic deployment:
-
-1. **Push to main branch**: Any push to the main branch will automatically trigger deployment
-2. **Automatic build**: GitHub Actions will build the Quarto document and deploy to GitHub Pages
-3. **No manual steps**: The deployment script handles everything automatically
-
-The GitHub Actions workflow will:
-- Install R and required packages
-- Build the Quarto document
-- Deploy to GitHub Pages automatically
+No GitHub Actions workflow is tracked in this repository. Use Option 1 for deployment, or add and track a workflow under `.github/workflows/` to automate it.
 
 ### Option 3: Local Development
 
@@ -98,7 +69,11 @@ To run locally:
 
 1. **Install R and required packages**:
    ```r
-   install.packages(c("sf", "leaflet", "dplyr", "DT", "plotly", "viridis", "RColorBrewer"))
+   install.packages(c(
+     "sf", "leaflet", "leaflet.extras", "dplyr", "purrr", "glue", "DT",
+     "plotly", "viridis", "RColorBrewer", "htmltools", "htmlwidgets",
+     "rmapshaper"
+   ))
    ```
 
 2. **Install Quarto**: https://quarto.org/docs/get-started/
